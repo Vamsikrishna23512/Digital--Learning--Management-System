@@ -2,10 +2,13 @@ package com.dlms.view;
 
 import com.dlms.dao.UserDAO;
 import com.dlms.model.User;
+import com.dlms.util.DBConnection;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-
+import java.sql.SQLException;     // ← Add this line
+import java.sql.Connection;
 public class LoginFrame extends JFrame {
     private JTextField txtUsername;
     private JPasswordField txtPassword;
@@ -53,7 +56,7 @@ public class LoginFrame extends JFrame {
         add(panel);
 
         // Login Action
-        btnLogin.addActionListener((ActionEvent e) -> {
+        btnLogin.addActionListener(e -> {
             String username = txtUsername.getText().trim();
             String password = new String(txtPassword.getPassword());
 
@@ -62,15 +65,29 @@ public class LoginFrame extends JFrame {
                 return;
             }
 
+            System.out.println("Trying to login with: " + username + " / " + password);
+
+            // Test DB Connection first
+            try {
+                Connection testConn = DBConnection.getConnection();
+                System.out.println("✅ Database Connection Successful!");
+                testConn.close();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Database Connection Failed!\n" + ex.getMessage());
+                return;
+            }
+
             UserDAO userDAO = new UserDAO();
             User loggedUser = userDAO.login(username, password);
 
             if (loggedUser != null) {
                 JOptionPane.showMessageDialog(this, "Login Successful! Welcome " + loggedUser.getFullName());
-                dispose(); // close login window
+                dispose();
                 new DashboardFrame(loggedUser).setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Username or Password!", "Login Failed", JOptionPane.ERROR_MESSAGE);
+                System.out.println("❌ Login returned null for user: " + username);
             }
         });
 
